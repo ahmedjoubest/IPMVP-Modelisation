@@ -1,0 +1,6 @@
+---
+title: "word_equation_double_sans"
+output: pdf_document
+---
+
+Conso = `r paste0(coef1)` x `r paste0(explic1)` + `r paste0(coef2)` x `r paste0(explic2)` 

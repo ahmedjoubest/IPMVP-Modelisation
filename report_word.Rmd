@@ -1,0 +1,1234 @@
+---
+title: "RAPPORT TECHNIQUE IPMVP-C"
+output: word_document
+params:
+  df: NA
+  regression : NA
+  predict : NA
+  explic1 : NA
+  explic2 : NA
+  resid : NA
+  new.explic.1 : NA
+  new.explic.2 : NA
+  comparaison.n : NA
+  debutfin_1 : NA
+  debutfin_2 : NA
+  explic3 : NA
+  new.explic.3 : NA
+  prix : NA
+  pdf : NA
+
+  
+---
+```{r, echo=FALSE, results = FALSE, fig.show='hide'}
+date = Sys.Date()
+date = as.character(date)
+```
+\begin{center}
+$`r paste0(date)`$
+\end{center}  
+```{r pressure, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/pagedegarde.png")
+```
+
+
+
+  
+    
+  
+  
+  
+  
+
+```{r, echo=FALSE, results = FALSE, fig.show='hide'}
+
+model <- function(db,linear, predict.name, Explic.1.name, Explic.2.name=NULL, resid,Explic.3.name) {
+  df = db
+  if(sum(is.na(df$Periode.de.Reference)) == 0 & sum(is.na(df$Periode.de.suivi)) == 0){
+    max_new = nrow(df)
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.suivi)) != 0){
+    max_new = which(is.na(df$Periode.de.suivi))[1] - 1
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.Reference)) != 0){
+    max_new = nrow(df)
+    max_ref = which(is.na(df$Periode.de.Reference))[1] - 1
+  }
+  # Formatage de la table
+  db$Periode.de.Reference = as.Date(db$Periode.de.Reference, tryFormats = c("%d/%m/%Y"))
+  if(linear == 1){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1)
+      coef = coef(modele)
+      coef1 <<- round(coef[1])
+      coef2 <<- round(coef[2])
+    } else{
+      modele = lm(Predict  ~ Explic.1- 1)
+      coef = coef(modele)
+      coef1 <<- round(coef[1])
+    }
+    # coef du modele
+
+    # Extraction du coefficient R 
+    R2 = summary(modele)$r.squared
+    R_2 <<- round(R2,3)
+    RMSE = sqrt(mean(modele$residuals^2))
+    RMSE_ <<- round(RMSE)
+    # statistique T
+    if(resid){
+      a0 = round(summary(modele)[[4]][1,3],2)
+      a0_ <<- a0
+      a1 = round(summary(modele)[[4]][2,3],2)
+      a1_ <<- a1
+    } else{
+      a1 = round(summary(modele)[[4]][1,3],2)
+      a1_ <<- a1
+
+    }
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Conso.lm = modele$fitted.values 
+    
+    visual1 = data.frame(Time = Time , Modele = Conso)
+    visual2 = data.frame(Time = Time , Modele = Conso.lm)
+    visuals = rbind(visual1,visual2)
+    names(visuals) = c("Time",predict.name)
+    visuals$Graphes=c(rep("Réalité",length(Time)),rep("Modèle",length(Time)))
+    
+    ggplot(visuals, aes(visuals[,1],visuals[,2],col=Graphes))+ geom_line(size = 1) + geom_point()+
+      theme(plot.title = element_text(hjust = 0.5))+
+      ylab(predict.name)+
+      xlab("Temps")+
+      theme(
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white", colour = "white",
+                                        size = 2, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "grey"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "grey"),
+        legend.key = element_rect(fill = "white"),
+        legend.background = element_rect(fill="white",
+                                         size=0.5, linetype="solid", 
+                                         colour ="white"))
+    
+  } else if (linear == 2) {
+    
+    
+    
+    
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2)
+      coef = coef(modele)
+      coef1 <<- round(coef[1])
+      coef2 <<- round(coef[2])
+      coef3 <<- round(coef[3])
+
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 - 1)
+      coef = coef(modele)
+      coef1 <<- round(coef[1])
+      coef2 <<- round(coef[2])
+    }
+    # coef du modele
+    # Extraction du coefficient R 
+    R2 = summary(modele)$r.squared
+    R_2 <<- round(R2,3)
+    RMSE = sqrt(mean(modele$residuals^2))
+    RMSE_ <<- round(RMSE)
+    # statistique T
+    if(resid){
+      a0 = round(summary(modele)[[4]][1,3],2)
+      a1 = round(summary(modele)[[4]][2,3],2)
+      a2 = round(summary(modele)[[4]][3,3],2)
+      a0_ <<- a0
+      a1_ <<- a1
+      a2_ <<- a2
+      
+    } else{
+      a1 = round(summary(modele)[[4]][1,3],2)
+      a2 = round(summary(modele)[[4]][2,3],2)
+      a1_ <<- a1
+      a2_ <<- a2}
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Conso.lm = modele$fitted.values 
+    
+    visual1 = data.frame(Time = Time , Modele = Conso)
+    visual2 = data.frame(Time = Time , Modele = Conso.lm)
+    visuals = rbind(visual1,visual2)
+    names(visuals) = c("Time",predict.name)
+    visuals$Graphes=c(rep("Réalité",length(Time)),rep("Modèle",length(Time)))
+    
+    ggplot(visuals, aes(visuals[,1],visuals[,2],col=Graphes))+ geom_line(size = 1) + geom_point()+
+      theme(plot.title = element_text(hjust = 0.5))+
+      ylab(predict.name)+
+      xlab("Temps")+
+      theme(
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white", colour = "white",
+                                        size = 2, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "grey"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "grey"),
+        legend.key = element_rect(fill = "white"),
+        legend.background = element_rect(fill="white",
+                                         size=0.5, linetype="solid", 
+                                         colour ="white"))
+  } else if (linear == 3){
+    
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    Explic.3 = db[,Explic.3.name][1:max_ref]
+    
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3)
+      coef = coef(modele)
+      coef1 <<- round(coef[1])
+      coef2 <<- round(coef[2])
+      coef3 <<- round(coef[3])
+      coef4 <<- round(coef[4])
+
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3- 1)
+      coef = coef(modele)
+      coef1 <<- round(coef[1])
+      coef2 <<- round(coef[2])
+      coef3 <<- round(coef[3])
+    }
+    # coef du modele
+    # Extraction du coefficient R 
+    R2 = summary(modele)$r.squared
+    R_2 <<- round(R2,3)
+    RMSE = sqrt(mean(modele$residuals^2))
+    RMSE_ <<- round(RMSE)
+    # statistique T
+    if(resid){
+      a0 = round(summary(modele)[[4]][1,3],2)
+      a1 = round(summary(modele)[[4]][2,3],2)
+      a2 = round(summary(modele)[[4]][3,3],2)
+      a3 = round(summary(modele)[[4]][4,3],2)
+      a0_ <<- a0
+      a1_ <<- a1
+      a2_ <<- a2
+      a3_ <<- a3
+      
+    } else{
+      a1 = round(summary(modele)[[4]][1,3],2)
+      a2 = round(summary(modele)[[4]][2,3],2)
+      a3 = round(summary(modele)[[4]][3,3],2)
+      a1_ <<- a1
+      a2_ <<- a2
+      a3_ <<- a3
+      }
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Conso.lm = modele$fitted.values 
+    
+    visual1 = data.frame(Time = Time , Modele = Conso)
+    visual2 = data.frame(Time = Time , Modele = Conso.lm)
+    visuals = rbind(visual1,visual2)
+    names(visuals) = c("Time",predict.name)
+    visuals$Graphes=c(rep("Réalité",length(Time)),rep("Modèle",length(Time)))
+    
+    ggplot(visuals, aes(visuals[,1],visuals[,2],col=Graphes))+ geom_line(size = 1) + geom_point()+
+      theme(plot.title = element_text(hjust = 0.5))+
+      ylab(predict.name)+
+      xlab("Temps")+
+      theme(
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white", colour = "white",
+                                        size = 2, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "grey"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "grey"),
+        legend.key = element_rect(fill = "white"),
+        legend.background = element_rect(fill="white",
+                                         size=0.5, linetype="solid", 
+                                         colour ="white"))
+    
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# The `params` object is available in the document.
+prev <- function(db,linear, predict.name, Explic.1.name, Explic.2.name=NULL, resid,new.explic.1, new.explic.2, comparaison.n,i.debut,i.fin,Explic.3.name,new.explic.3){
+    df = db
+  if(sum(is.na(df$Periode.de.Reference)) == 0 & sum(is.na(df$Periode.de.suivi)) == 0){
+    max_new = nrow(df)
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.suivi)) != 0){
+    max_new = which(is.na(df$Periode.de.suivi))[1] - 1
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.Reference)) != 0){
+    max_new = nrow(df)
+    max_ref = which(is.na(df$Periode.de.Reference))[1] - 1
+  }
+  # Formatage dPeriode.de.Referencee la table
+  db$Periode.de.Reference = as.Date(db$Periode.de.Reference, tryFormats = c("%d/%m/%Y"))
+  db$Periode.de.suivi = as.Date(db$Periode.de.suivi, tryFormats = c("%d/%m/%Y"))
+  if(linear == 1){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1)
+    } else{
+      modele = lm(Predict  ~ Explic.1- 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2]
+
+    } else{
+      Conso.lm = new1*coef[1]
+    }
+    conso.real = comparaison
+    
+    visual1 = data.frame(Time = Time , Modele = Conso)
+    visual2 = data.frame(Time = Time.new , Modele = Conso.lm)
+    visual3 = data.frame(Time = Time.new , Modele = conso.real)
+    
+    visuals = rbind(visual1,visual2)
+    visuals = rbind(visuals,visual3)
+    
+    names(visuals) = c("Time",predict.name)
+    visuals$Consommations=c(rep("de référence",length(Time)),rep("estimée sans APE",length(Time.new)),rep("réelle après APE",length(Time.new)))
+    
+    debut = db[i.debut,"Periode.de.suivi"]
+    fin = db[i.fin,"Periode.de.suivi"]
+    
+    
+    ### Montrer la surface d'économie rouge verte : 
+    
+    #Calcul par interpolation
+    days = seq(Time.new[1],Time.new[length(Time.new)],by = "day")
+    resultat_modele =approx(Time.new, visual2$Modele, xout = days, method="linear", ties="ordered")$y
+    resultat_reel =approx(Time.new, visual3$Modele, xout = days , method="linear", ties="ordered")$y
+    bdd=data.frame(days,resultat_modele,resultat_reel)
+    # différence des couleurs
+    bdd_red = bdd
+    red = c(bdd_red$resultat_modele <= bdd$resultat_reel)
+    bdd_red = bdd_red[red,]
+    #
+    bdd_green = bdd
+    green = c(bdd_green$resultat_modele > bdd$resultat_reel)
+    bdd_green = bdd_green[green,]
+    for(i in 1:(length(bdd$days)-length(visuals[,1]))){
+      a = data.frame(Time = visuals[1,1], Modele = visuals[1,2], Consommations = visuals[1,3])
+      names(a)[2] = predict.name
+      visuals = rbind(a,visuals)
+    }
+    # extremité segment
+    x1_red = c(bdd_red$days,rep(bdd_red$days[1],nrow(bdd) - nrow(bdd_red)))
+    y1_red = c(bdd_red$resultat_modele,rep(bdd_red$resultat_modele[1],nrow(bdd) - nrow(bdd_red)))
+    x2_red = c(bdd_red$days,rep(bdd_red$days[1],nrow(bdd) - nrow(bdd_red)))
+    y2_red = c(bdd_red$resultat_reel,rep(bdd_red$resultat_modele[1],nrow(bdd) - nrow(bdd_red)))
+    #
+    x1_green = c(bdd_green$days,rep(bdd_green$days[1],nrow(bdd) - nrow(bdd_green)))
+    y1_green = c(bdd_green$resultat_modele,rep(bdd_green$resultat_modele[1],nrow(bdd) - nrow(bdd_green)))
+    x2_green = c(bdd_green$days,rep(bdd_green$days[1],nrow(bdd) - nrow(bdd_green)))
+    y2_green = c(bdd_green$resultat_reel,rep(bdd_green$resultat_modele[1],nrow(bdd) - nrow(bdd_green)))
+    
+    ggplot(visuals, aes(visuals[,1],visuals[,2],col=Consommations,linetype = Consommations))+ geom_line(size = 1.3) +     geom_point(size = 1)+
+      scale_color_manual(values = c("grey","red","green"))+
+      theme(plot.title = element_text(hjust = 0.5))+
+      ylab(predict.name)+
+      xlab("Temps")+
+      theme(legend.position="top")+
+      theme(plot.background = element_rect(fill = "#EEEBEB"))+
+      geom_vline(xintercept = seq(Time[length(Time)],Time.new[1], by="day"),linetype = "dotdash", colour = "grey")+
+      scale_linetype_manual(values=c("dashed", "dashed","solid"))+
+      theme(
+        plot.background = element_rect(fill = "#ffffff"),
+        panel.background = element_rect(fill = "#ffffff", colour = "#ffffff",
+                                        size = 2, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"),
+        panel.grid.major.x = element_line(size = 0.2, linetype = 'solid',
+                                        colour = "grey"),
+        panel.grid.minor.x = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "white"),
+        
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "white"),
+        legend.key = element_rect(fill = "#ffffff"),
+        legend.background = element_rect(fill="#ffffff",
+                                         size=0.5, linetype="solid", 
+                                         colour ="#ffffff"))+
+      geom_segment(mapping=aes(x=x1_red,
+                               y=y1_red,
+                               xend=x2_red,
+                               yend=y2_red),
+                   color="red",linetype = "dotted",size = 0.2)+
+      geom_segment(mapping=aes(x=x1_green,
+                               y=y1_green,
+                               xend=x2_green,
+                               yend=y2_green),
+                   color="#00FF00",linetype = "dotted",size = 0.2)+
+      theme(axis.text.x = element_text(angle=45))+
+      scale_x_date(breaks = date_breaks("months"),
+                   labels = date_format("%b"))
+      
+    
+    
+  } else if (linear == 2) {
+    
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2]
+    }
+    conso.real = comparaison
+    
+    visual1 = data.frame(Time = Time , Modele = Conso)
+    visual2 = data.frame(Time = Time.new , Modele = Conso.lm)
+    visual3 = data.frame(Time = Time.new , Modele = conso.real)
+    
+    visuals = rbind(visual1,visual2)
+    visuals = rbind(visuals,visual3)
+    
+    names(visuals) = c("Time",predict.name)
+    visuals$Consommations=c(rep("de référence",length(Time)),rep("estimée sans APE",length(Time.new)),rep("réelle après APE",length(Time.new)))
+    
+    ### Montrer la surface d'économie rouge verte : 
+    
+    #Calcul par interpolation
+    days = seq(Time.new[1],Time.new[length(Time.new)],by = "day")
+    resultat_modele =approx(Time.new, visual2$Modele, xout = days, method="linear", ties="ordered")$y
+    resultat_reel =approx(Time.new, visual3$Modele, xout = days , method="linear", ties="ordered")$y
+    bdd=data.frame(days,resultat_modele,resultat_reel)
+    # différence des couleurs
+    bdd_red = bdd
+    red = c(bdd_red$resultat_modele <= bdd$resultat_reel)
+    bdd_red = bdd_red[red,]
+    #
+    bdd_green = bdd
+    green = c(bdd_green$resultat_modele > bdd$resultat_reel)
+    bdd_green = bdd_green[green,]
+    for(i in 1:(length(bdd$days)-length(visuals[,1]))){
+      a = data.frame(Time = visuals[1,1], Modele = visuals[1,2], Consommations = visuals[1,3])
+      names(a)[2] = predict.name
+      visuals = rbind(a,visuals)
+    }
+    # extremité segment
+    x1_red = c(bdd_red$days,rep(bdd_red$days[1],nrow(bdd) - nrow(bdd_red)))
+    y1_red = c(bdd_red$resultat_modele,rep(bdd_red$resultat_modele[1],nrow(bdd) - nrow(bdd_red)))
+    x2_red = c(bdd_red$days,rep(bdd_red$days[1],nrow(bdd) - nrow(bdd_red)))
+    y2_red = c(bdd_red$resultat_reel,rep(bdd_red$resultat_modele[1],nrow(bdd) - nrow(bdd_red)))
+    #
+    x1_green = c(bdd_green$days,rep(bdd_green$days[1],nrow(bdd) - nrow(bdd_green)))
+    y1_green = c(bdd_green$resultat_modele,rep(bdd_green$resultat_modele[1],nrow(bdd) - nrow(bdd_green)))
+    x2_green = c(bdd_green$days,rep(bdd_green$days[1],nrow(bdd) - nrow(bdd_green)))
+    y2_green = c(bdd_green$resultat_reel,rep(bdd_green$resultat_modele[1],nrow(bdd) - nrow(bdd_green)))
+    
+    ggplot(visuals, aes(visuals[,1],visuals[,2],col=Consommations,linetype = Consommations))+ geom_line(size = 1.3) +     geom_point(size = 1)+
+      scale_color_manual(values = c("grey","red","green"))+
+      theme(plot.title = element_text(hjust = 0.5))+
+      ylab(predict.name)+
+      xlab("Temps")+
+      theme(legend.position="top")+
+      theme(plot.background = element_rect(fill = "#EEEBEB"))+
+      geom_vline(xintercept = seq(Time[length(Time)],Time.new[1], by="day"),linetype = "dotdash", colour = "grey")+
+      scale_linetype_manual(values=c("dashed", "dashed","solid"))+
+      theme(
+        plot.background = element_rect(fill = "#ffffff"),
+        panel.background = element_rect(fill = "#ffffff", colour = "#ffffff",
+                                        size = 2, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"),
+        panel.grid.major.x = element_line(size = 0.2, linetype = 'solid',
+                                        colour = "grey"),
+        panel.grid.minor.x = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "white"),
+        
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "white"),
+        legend.key = element_rect(fill = "#ffffff"),
+        legend.background = element_rect(fill="#ffffff",
+                                         size=0.5, linetype="solid", 
+                                         colour ="#ffffff"))+
+      geom_segment(mapping=aes(x=x1_red,
+                               y=y1_red,
+                               xend=x2_red,
+                               yend=y2_red),
+                   color="red",linetype = "dotted",size = 0.2)+
+      geom_segment(mapping=aes(x=x1_green,
+                               y=y1_green,
+                               xend=x2_green,
+                               yend=y2_green),
+                   color="#00FF00",linetype = "dotted",size = 0.2)+
+      theme(axis.text.x = element_text(angle=45))+
+      scale_x_date(breaks = date_breaks("months"),
+                   labels = date_format("%b"))
+    } else if(linear == 3){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    Explic.3 = db[,Explic.3.name][1:max_ref]
+    
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    new3 = db[,new.explic.3][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3] + new3*coef[4]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2] + new3*coef[3]
+    }
+    conso.real = comparaison
+    
+    visual1 = data.frame(Time = Time , Modele = Conso)
+    visual2 = data.frame(Time = Time.new , Modele = Conso.lm)
+    visual3 = data.frame(Time = Time.new , Modele = conso.real)
+    
+    visuals = rbind(visual1,visual2)
+    visuals = rbind(visuals,visual3)
+    
+    names(visuals) = c("Time",predict.name)
+    visuals$Consommations=c(rep("de référence",length(Time)),rep("estimée sans APE",length(Time.new)),rep("réelle après APE",length(Time.new)))
+    
+    debut = db[i.debut,"Periode.de.suivi"]
+    fin = db[i.fin,"Periode.de.suivi"]
+    
+    
+    ### Montrer la surface d'économie rouge verte : 
+    
+    #Calcul par interpolation
+    days = seq(Time.new[1],Time.new[length(Time.new)],by = "day")
+    resultat_modele =approx(Time.new, visual2$Modele, xout = days, method="linear", ties="ordered")$y
+    resultat_reel =approx(Time.new, visual3$Modele, xout = days , method="linear", ties="ordered")$y
+    bdd=data.frame(days,resultat_modele,resultat_reel)
+    # différence des couleurs
+    bdd_red = bdd
+    red = c(bdd_red$resultat_modele <= bdd$resultat_reel)
+    bdd_red = bdd_red[red,]
+    #
+    bdd_green = bdd
+    green = c(bdd_green$resultat_modele > bdd$resultat_reel)
+    bdd_green = bdd_green[green,]
+    for(i in 1:(length(bdd$days)-length(visuals[,1]))){
+      a = data.frame(Time = visuals[1,1], Modele = visuals[1,2], Consommations = visuals[1,3])
+      names(a)[2] = predict.name
+      visuals = rbind(a,visuals)
+    }
+    # extremité segment
+    x1_red = c(bdd_red$days,rep(bdd_red$days[1],nrow(bdd) - nrow(bdd_red)))
+    y1_red = c(bdd_red$resultat_modele,rep(bdd_red$resultat_modele[1],nrow(bdd) - nrow(bdd_red)))
+    x2_red = c(bdd_red$days,rep(bdd_red$days[1],nrow(bdd) - nrow(bdd_red)))
+    y2_red = c(bdd_red$resultat_reel,rep(bdd_red$resultat_modele[1],nrow(bdd) - nrow(bdd_red)))
+    #
+    x1_green = c(bdd_green$days,rep(bdd_green$days[1],nrow(bdd) - nrow(bdd_green)))
+    y1_green = c(bdd_green$resultat_modele,rep(bdd_green$resultat_modele[1],nrow(bdd) - nrow(bdd_green)))
+    x2_green = c(bdd_green$days,rep(bdd_green$days[1],nrow(bdd) - nrow(bdd_green)))
+    y2_green = c(bdd_green$resultat_reel,rep(bdd_green$resultat_modele[1],nrow(bdd) - nrow(bdd_green)))
+    
+    ggplot(visuals, aes(visuals[,1],visuals[,2],col=Consommations,linetype = Consommations))+ geom_line(size = 1.3) +     geom_point(size = 1)+
+      scale_color_manual(values = c("grey","red","green"))+
+      theme(plot.title = element_text(hjust = 0.5))+
+      ylab(predict.name)+
+      xlab("Temps")+
+      theme(legend.position="top")+
+      theme(plot.background = element_rect(fill = "#EEEBEB"))+
+      geom_vline(xintercept = seq(Time[length(Time)],Time.new[1], by="day"),linetype = "dotdash", colour = "grey")+
+      scale_linetype_manual(values=c("dashed", "dashed","solid"))+
+      theme(
+        plot.background = element_rect(fill = "#ffffff"),
+        panel.background = element_rect(fill = "#ffffff", colour = "#ffffff",
+                                        size = 2, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'solid',
+                                        colour = "grey"),
+        panel.grid.major.x = element_line(size = 0.2, linetype = 'solid',
+                                        colour = "grey"),
+        panel.grid.minor.x = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "white"),
+        
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "white"),
+        legend.key = element_rect(fill = "#ffffff"),
+        legend.background = element_rect(fill="#ffffff",
+                                         size=0.5, linetype="solid", 
+                                         colour ="#ffffff"))+
+      geom_segment(mapping=aes(x=x1_red,
+                               y=y1_red,
+                               xend=x2_red,
+                               yend=y2_red),
+                   color="red",linetype = "dotted",size = 0.2)+
+      geom_segment(mapping=aes(x=x1_green,
+                               y=y1_green,
+                               xend=x2_green,
+                               yend=y2_green),
+                   color="#00FF00",linetype = "dotted",size = 0.2)+
+      theme(axis.text.x = element_text(angle=45))+
+      scale_x_date(breaks = date_breaks("months"),
+                   labels = date_format("%b"))
+
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+show_table_donnees <- function(db,linear, predict.name, Explic.1.name, Explic.2.name=NULL, resid,new.explic.1, new.explic.2, comparaison.n,i.debut,i.fin,Explic.3.name,new.explic.3){
+  library(knitr)
+    df = db
+  if(sum(is.na(df$Periode.de.Reference)) == 0 & sum(is.na(df$Periode.de.suivi)) == 0){
+    max_new = nrow(df)
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.suivi)) != 0){
+    max_new = which(is.na(df$Periode.de.suivi))[1] - 1
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.Reference)) != 0){
+    max_new = nrow(df)
+    max_ref = which(is.na(df$Periode.de.Reference))[1] - 1
+  }
+  # Formatage dPeriode.de.Referencee la table
+  db$Periode.de.Reference = as.Date(db$Periode.de.Reference, tryFormats = c("%d/%m/%Y"))
+  db$Periode.de.suivi = as.Date(db$Periode.de.suivi, tryFormats = c("%d/%m/%Y"))
+  if(linear == 1){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1)
+    } else{
+      modele = lm(Predict  ~ Explic.1- 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2]
+    } else{
+      Conso.lm = new1*coef[1]
+    }
+    conso.real = comparaison
+    
+    Eco = Conso.lm - conso.real
+    
+    visuals = data.frame("Periode.de.Reference" = Time.new,  "Consommation ajustée" = Conso.lm,
+                         "Consommation mesurée" = conso.real, "V4" = new1, check.names = FALSE)
+    names(visuals)[4] = new.explic.1
+
+
+    kable(visuals)
+
+    
+    
+    
+  } else if (linear == 2) {
+    
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2]
+    }
+    conso.real = comparaison
+    
+    visuals = data.frame("Periode.de.Reference" = Time.new,  "Consommation ajustée" = Conso.lm,
+                         "Consommation mesurée" = conso.real, "V4" = new1,
+                         "V5" = new2,  check.names = FALSE)
+    names(visuals)[4] = new.explic.1
+    names(visuals)[5] = new.explic.2
+
+    kable(visuals)
+
+  } else if(linear == 3){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    Explic.3 = db[,Explic.3.name][1:max_ref]
+    
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    new3 = db[,new.explic.3][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3] + new3*coef[4]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2] + new3*coef[3]
+    }
+    conso.real = comparaison
+    Eco = Conso.lm - conso.real
+    
+    visuals = data.frame("Periode.de.Reference" = Time.new,  "Consommation ajustée" = Conso.lm,
+                         "Consommation mesurée" = conso.real, "V4" = new1,
+                         "V5" = new2, "V6" = new3,  check.names = FALSE)
+    names(visuals)[4] = new.explic.1
+    names(visuals)[5] = new.explic.2
+    names(visuals)[6] = new.explic.3
+
+    kable(visuals)
+    
+
+  }
+}
+
+
+
+
+
+
+show_table_economies <- function(db,linear, predict.name, Explic.1.name, Explic.2.name=NULL, resid,new.explic.1, new.explic.2, comparaison.n,i.debut,i.fin,Explic.3.name,new.explic.3, prix){
+  df = db
+  if(sum(is.na(df$Periode.de.Reference)) == 0 & sum(is.na(df$Periode.de.suivi)) == 0){
+    max_new = nrow(df)
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.suivi)) != 0){
+    max_new = which(is.na(df$Periode.de.suivi))[1] - 1
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.Reference)) != 0){
+    max_new = nrow(df)
+    max_ref = which(is.na(df$Periode.de.Reference))[1] - 1
+  }
+  library(knitr)
+  # Formatage dPeriode.de.Referencee la table
+  db$Periode.de.Reference = as.Date(db$Periode.de.Reference, tryFormats = c("%d/%m/%Y"))
+  db$Periode.de.suivi = as.Date(db$Periode.de.suivi, tryFormats = c("%d/%m/%Y"))
+  if(linear == 1){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1)
+    } else{
+      modele = lm(Predict  ~ Explic.1- 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2]
+    } else{
+      Conso.lm = new1*coef[1]
+    }
+    conso.real = comparaison
+    
+    Eco = (Conso.lm - conso.real)
+    
+    Pourcentage = round((Eco/Conso.lm)*100)
+    Pourcentage = as.character(Pourcentage)
+    Pourcentage = paste0(Pourcentage,  rep("%",length(Pourcentage)))
+    Eco = round(Conso.lm - conso.real)
+
+    Eco_en_Euro = round(as.numeric(prix)*Eco)
+    Eco_en_Euro = as.character(Eco_en_Euro)
+    Eco_en_Euro = paste0(Eco_en_Euro,  rep("€",length(Eco_en_Euro)))
+
+    visuals = data.frame("Periode.de.Reference" = Time.new,  "Economies d'énergie" = Eco, "Pourentage" = Pourcentage,
+                         "Economie en €" =   Eco_en_Euro, check.names = FALSE)
+
+
+    kable(visuals)
+
+    
+    
+    
+  } else if (linear == 2) {
+    
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2]
+    }
+    conso.real = comparaison
+    
+    Eco = (Conso.lm - conso.real)
+    
+    Pourcentage = round((Eco/Conso.lm)*100)
+    Pourcentage = as.character(Pourcentage)
+    Pourcentage = paste0(Pourcentage,  rep("%",length(Pourcentage)))
+    Eco = round(Conso.lm - conso.real)
+
+    Eco_en_Euro = round(as.numeric(prix)*Eco)
+    Eco_en_Euro = as.character(Eco_en_Euro)
+    Eco_en_Euro = paste0(Eco_en_Euro,  rep("€",length(Eco_en_Euro)))
+    
+    visuals = data.frame("Periode.de.Reference" = Time.new,  "Economies d'énergie" = Eco, "Pourentage" = Pourcentage,
+                         "Economie en €" =   Eco_en_Euro, check.names = FALSE)
+
+
+    kable(visuals)
+
+  } else if(linear == 3){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    Explic.3 = db[,Explic.3.name][1:max_ref]
+    
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    new3 = db[,new.explic.3][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3] + new3*coef[4]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2] + new3*coef[3]
+    }
+    conso.real = comparaison
+    
+    Eco = (Conso.lm - conso.real)
+    
+    Pourcentage = round((Eco/Conso.lm)*100)
+    Pourcentage = as.character(Pourcentage)
+    Pourcentage = paste0(Pourcentage,  rep("%",length(Pourcentage)))
+    Eco = round(Conso.lm - conso.real)
+
+    Eco_en_Euro = round(as.numeric(prix)*Eco)
+    Eco_en_Euro = as.character(Eco_en_Euro)
+    Eco_en_Euro = paste0(Eco_en_Euro,  rep("€",length(Eco_en_Euro)))
+    
+    visuals = data.frame("Periode.de.Reference" = Time.new,  "Economies d'énergie" = Eco, "Pourentage" = Pourcentage,
+                         "Economie en €" =   Eco_en_Euro, check.names = FALSE)
+
+
+    kable(visuals)
+    
+
+  }
+}
+
+
+
+
+
+
+
+
+
+
+show_table_total_economies <- function(db,linear, predict.name, Explic.1.name, Explic.2.name=NULL, resid,new.explic.1, new.explic.2, comparaison.n,i.debut,i.fin,Explic.3.name,new.explic.3, prix){
+    df = db
+  if(sum(is.na(df$Periode.de.Reference)) == 0 & sum(is.na(df$Periode.de.suivi)) == 0){
+    max_new = nrow(df)
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.suivi)) != 0){
+    max_new = which(is.na(df$Periode.de.suivi))[1] - 1
+    max_ref = nrow(df)
+  } else if (sum(is.na(df$Periode.de.Reference)) != 0){
+    max_new = nrow(df)
+    max_ref = which(is.na(df$Periode.de.Reference))[1] - 1
+  }
+  library(knitr)
+  # Formatage dPeriode.de.Referencee la table
+  db$Periode.de.Reference = as.Date(db$Periode.de.Reference, tryFormats = c("%d/%m/%Y"))
+  db$Periode.de.suivi = as.Date(db$Periode.de.suivi, tryFormats = c("%d/%m/%Y"))
+  if(linear == 1){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1)
+    } else{
+      modele = lm(Predict  ~ Explic.1- 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2]
+    } else{
+      Conso.lm = new1*coef[1]
+    }
+    conso.real = comparaison
+    
+    
+    Pourcentage = round((sum(Conso.lm - conso.real)/sum(Conso.lm))*100)
+    Pourcentage = as.character(Pourcentage)
+    Pourcentage = paste0(Pourcentage,"%")
+    
+    Eco = round(Conso.lm - conso.real)
+    
+    Eco_en_Euro = round(as.numeric(prix)*Eco)
+    Eco_en_Euro = sum(Eco_en_Euro)
+    Eco_en_Euro = as.character(Eco_en_Euro)
+    Eco_en_Euro = paste0(Eco_en_Euro,"€")
+
+    Time.new = paste0("Total pour ", length(Time.new), " mois :")
+    visuals = data.frame("Période" = Time.new,  "Economies d'énergie" = sum(Eco), "Pourentage" = Pourcentage,
+                         "Economie en €" =   Eco_en_Euro, check.names = FALSE)
+
+
+    kable(visuals)
+
+    
+    
+    
+  } else if (linear == 2) {
+    
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2]
+    }
+    conso.real = comparaison
+    
+    Pourcentage = round((sum(Conso.lm - conso.real)/sum(Conso.lm))*100)
+    Pourcentage = as.character(Pourcentage)
+    Pourcentage = paste0(Pourcentage,"%")
+    
+    Eco = round(Conso.lm - conso.real)
+    
+    Eco_en_Euro = round(as.numeric(prix)*Eco)
+    Eco_en_Euro = sum(Eco_en_Euro)
+    Eco_en_Euro = as.character(Eco_en_Euro)
+    Eco_en_Euro = paste0(Eco_en_Euro,"€")
+
+    Time.new = paste0("Total pour ", length(Time.new), " mois :")
+    visuals = data.frame("Période" = Time.new,  "Economies d'énergie" = sum(Eco), "Pourentage" = Pourcentage,
+                         "Economie en €" =   Eco_en_Euro, check.names = FALSE)
+
+
+    kable(visuals)
+
+  } else if(linear == 3){
+    # Lecture
+    Predict = db[,predict.name][1:max_ref]
+    Explic.1 = db[,Explic.1.name][1:max_ref]
+    Explic.2 = db[,Explic.2.name][1:max_ref]
+    Explic.3 = db[,Explic.3.name][1:max_ref]
+    
+    new1 = db[,new.explic.1][1:max_new]
+    new2 = db[,new.explic.2][1:max_new]
+    new3 = db[,new.explic.3][1:max_new]
+    
+    comparaison = db[,comparaison.n][1:max_new]
+    # Modele
+    if(resid){
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3)
+    } else{
+      modele = lm(Predict  ~ Explic.1 + Explic.2 + Explic.3 - 1)
+    }
+    # coef du modele
+    coef = coef(modele)
+    # plot
+    Time = db$Periode.de.Reference[1:max_ref]
+    Conso = db[,predict.name][1:max_ref]
+    Time.new = db$Periode.de.suivi[1:max_new]
+    if(resid){
+      Conso.lm =  coef[1] + new1*coef[2] + new2*coef[3] + new3*coef[4]
+    } else{
+      Conso.lm = new1*coef[1] + new2*coef[2] + new3*coef[3]
+    }
+    conso.real = comparaison
+    
+    Pourcentage = round((sum(Conso.lm - conso.real)/sum(Conso.lm))*100)
+    Pourcentage = as.character(Pourcentage)
+    Pourcentage = paste0(Pourcentage,"%")
+    
+    Eco = round(Conso.lm - conso.real)
+    
+    Eco_en_Euro = round(as.numeric(prix)*Eco)
+    Eco_en_Euro = sum(Eco_en_Euro)
+    Eco_en_Euro = as.character(Eco_en_Euro)
+    Eco_en_Euro = paste0(Eco_en_Euro,"€")
+
+    Time.new = paste0("Total pour ", length(Time.new), " mois :")
+    visuals = data.frame("Période" = Time.new,  "Economies d'énergie" = sum(Eco), "Pourentage" = Pourcentage,
+                         "Economie en €" =   Eco_en_Euro, check.names = FALSE)
+
+
+    kable(visuals)
+    
+
+  }
+}
+predict = params$predict
+explic1 = params$explic1
+explic2 = params$explic2
+explic3 = params$explic3
+
+if(params$regression == "1" & params$resid == "TRUE"){
+  simple_resid = T
+} else {simple_resid = F}
+
+if(params$regression == "1" & params$resid == "FALSE"){
+  simple_sans = T
+} else {simple_sans = F}
+
+if(params$regression == "2" & params$resid == "TRUE"){
+  double_resid = T
+} else {double_resid = F}
+
+if(params$regression == "2" & params$resid == "FALSE"){
+  double_sans = T
+} else {double_sans = F}
+
+if(params$regression == "3" & params$resid == "TRUE"){
+  triple_resid = T
+} else {triple_resid = F}
+
+
+if(params$regression == "3" & params$resid == "FALSE"){
+  triple_sans = T
+} else {triple_sans = F}
+
+
+# probleme equation word :
+pdf = params$pdf
+if(pdf == "TRUE"){
+  pdf = TRUE
+} else {
+  pdf = FALSE
+}
+
+
+
+## Pour définir les variables coef1 <<- coef[1] etc...
+model(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$explic3)
+```
+# I - Introduction
+
+Ce rapport est créé automatiquement par l’application *IPMVP* développée par le pôle *PEI* sous le langage de programmation R et son package *Shiny*. L’application est conçue pour générer une analyse complète pour la mise en place de protocole *IPMVP* en option *C* **avec une seule APE** (Action de performance énergétique).
+  
+  
+Dans un premier temps, il fournit dans les détails les paramètres de la régression linéaire utilisée pour la modélisation de la consommation qui permettent de valider le modèle. Et dans un second temps, il affiche les tables de données modélisées pour la période de suivi ainsi que les graphes correspondants.
+  
+  
+**Remarque** : Pour obtenir des données copiables en Excel, il vaut mieux préférer le format Word.  
+
+
+# II - Modélisation
+
+```{r conditional_print, child='D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/Regression_simple_resid.Rmd', eval = simple_resid, echo = F}
+```
+
+```{r conditional_print, child='D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/Regression_simple_sans.Rmd', eval = simple_sans, echo = F}
+```
+
+```{r conditional_print, child='D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/Regression_double_resid.Rmd', eval = double_resid, echo = F}
+```
+
+```{r conditional_print, child='D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/Regression_double_sans.Rmd', eval = double_sans, echo = F}
+```
+
+```{r conditional_print, child='D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/Regression_triple_resid.Rmd', eval = triple_resid, echo = F}
+```
+
+```{r conditional_print, child='D:/projets_R/Serveur-AWS-main/IPMVP-Modelisation/Regression_triple_sans.Rmd', eval = triple_sans, echo = F}
+```
+
+\pagebreak
+
+#  III- Evaluation des économies et calcul de gain
+
+Les sections suivants présentent une visualisation de l’évaluation des économies d’énergies réalisées grâce à l’APE, ainsi que toutes les données des facteurs d’ajustements de la période de suivi et des gains atteints en énergie et en Euro.
+
+Les sections suivantes présentent une visualisation des économies réalisées et des tables de données résumant les gains en unité d'énergie et en Euro :
+
+## Visualisation des économies réalisées après l'APE :
+
+```{r ,warning=FALSE, fig.height = 3.5, fig.width = 6.5, fig.align = "center", echo = FALSE , fig.cap="Evaluation des économies réalisées"}
+prev(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$new.explic.1,params$new.explic.2,params$comparaison.n,params$debutfin_1,params$debutfin_2,params$explic3,params$new.explic.3)
+```
+
+## Données de la période de suivi :  
+
+```{r, echo=FALSE}
+show_table_donnees(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$new.explic.1,params$new.explic.2,params$comparaison.n,params$debutfin_1,params$debutfin_2,params$explic3,params$new.explic.3)
+```
+\newpage
+## Données des économies réalisées :  
+
+```{r, echo=FALSE}
+show_table_economies(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$new.explic.1,params$new.explic.2,params$comparaison.n,params$debutfin_1,params$debutfin_2,params$explic3,params$new.explic.3,params$prix)
+```
+
+## Données totales pour toute la période :  
+
+```{r, echo=FALSE}
+show_table_total_economies(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$new.explic.1,params$new.explic.2,params$comparaison.n,params$debutfin_1,params$debutfin_2,params$explic3,params$new.explic.3,params$prix)
+```

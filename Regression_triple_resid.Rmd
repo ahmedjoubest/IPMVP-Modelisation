@@ -1,0 +1,29 @@
+---
+title: "Regression_triple_residu"
+output: pdf_document
+---
+
+La consommation est ajustée en utilisant une régression linéaire double, où les deux variables explicatives sont "`r explic1`", "`r explic2`" et "`r explic3`". Cette régression est exprimée par l'équation suivante :
+
+\begin{center}
+$ Conso = `r paste0(coef1)` + `r paste0(coef2)` \times `r paste0(explic1)` + `r paste0(coef3)` \times `r paste0(explic2)` + `r paste0(coef4)` \times `r paste0(explic3)`$.
+\end{center}
+
+```{r conditional_print, child='word_equation_triple_resid.Rmd', eval = !pdf, echo = F}
+```
+
+Paramètres de précision et statistiques T :
+
+Element | Valeur
+------------- | -------------
+**R²** | `r paste0(R_2)`
+**RMSE** | `r paste0(RMSE_)`
+**a1** | `r paste0(a0_)`
+**a2** | `r paste0(a1_)`
+**a3** | `r paste0(a2_)`
+**a4** | `r paste0(a3_)`
+
+
+```{r , fig.height = 3, fig.width = 6, fig.align = "center", echo = FALSE , fig.cap="Evaluation du modèle"}
+model(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$explic3)
+```

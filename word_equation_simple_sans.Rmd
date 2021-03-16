@@ -1,0 +1,7 @@
+---
+title: "word_equation_simple_sans"
+output: pdf_document
+---
+
+Conso = `r paste0(coef1)` x `r paste0(explic1)`
+

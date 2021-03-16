@@ -1,0 +1,27 @@
+---
+title: "Regression_simple_sans"
+output: pdf_document
+---
+
+La consommation est ajustée en utilisant une régression linéaire simple, où la seule variable explicative est "`r explic1`". Cette régression est exprimée par l'équation suivante :
+
+\begin{center}
+$ Conso = `r paste0(coef1)` \times `r paste0(explic1)`$.
+\end{center}
+
+```{r conditional_print, child='word_equation_simple_sans.Rmd', eval = !pdf, echo = F}
+```
+
+Paramètres de précision et statistique T : 
+
+Element | Valeur
+------------- | -------------
+**R²** | `r paste0(R_2)`
+**RMSE** | `r paste0(RMSE_)`
+**a1** | `r paste0(a1_)`
+
+Graphique :
+
+```{r , fig.height = 2.5, fig.width = 6, fig.align = "center",fig.cap = "Evaluation du modèle statistiques"}
+model(params$df,params$regression,params$predict,params$explic1,params$explic2,params$resid,params$explic3)
+```
